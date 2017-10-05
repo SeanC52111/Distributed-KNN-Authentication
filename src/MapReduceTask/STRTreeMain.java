@@ -14,8 +14,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 
+import quadIndex.Rect;
+
 public class STRTreeMain {
-	public static void main(String []args)throws IOException {
+	public static void main(String []args)throws IOException,Exception {
 		/*
 		if(args.length<1)
 		{
@@ -36,29 +38,47 @@ public class STRTreeMain {
 		*/
 		String [] index = {"input","tree"};
 		//String [] rangequery = {"1,1,3,7,16","tree","output"};
-		String[] knn = {"1,2,4,2","tree","output"};
+		String[] knn = {"1,1,7,4","tree","output"};
 		//STRTreeIndex.run(index);
 		//STRTreeRangeQuery.run(rangequery);
 		STRTreeKNN.run(knn);
-		/*
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(URI.create("hdfs://localhost:9000/user/hadoop/output/part-00000"),conf);
-		InputStream in=null;
+		String knnresult = getkNN("hdfs://localhost:9000/user/hadoop/output/part-00000");
+		int check = knnresult.indexOf("needrange");
+		//System.out.println("check" +check);
+		if(check != -1) {
+		String[] mbr = knnresult.split("\t")[1].split(" ");
+		String knnrange = "2,"+mbr[1]+","+mbr[2]+","+mbr[3]+","+mbr[4];
 		try {
-			in = fs.open(new Path("hdfs://localhost:9000/user/hadoop/output/part-00000"));
+			deleteDir("output");
+		}catch(Exception e) {}
+		String [] knnrangequery = {knnrange,"tree","output"};
+		STRTreeRangeQuery.run(knnrangequery);
+		
+		}
+	}
+	private static String getkNN(String uri)throws Exception {
+		Configuration conf = new Configuration();
+		FileSystem fs = FileSystem.get(URI.create(uri),conf);
+		InputStream in=null;
+		String knn = "";
+		try {
+			in = fs.open(new Path(uri));
 			BufferedReader  br = new BufferedReader(new InputStreamReader(in));
-			while(br.ready()) {
-				String line = br.readLine();
-				System.out.println(line);
-			}
+			String line = br.readLine();
+			knn = line;
 			br.close();
-		}catch(IOException e) {
-			e.printStackTrace();
 		}
 		finally {
 			
 		}
-		*/
+		return knn;
 	}
-	
+	private static void deleteDir(String s)throws Exception{
+		Configuration conf = new Configuration();
+		Path output = new Path(s);
+		FileSystem fs = output.getFileSystem(conf);
+		if(fs.exists(output)) {
+			fs.delete(output,true);
+		}
+	}
 }

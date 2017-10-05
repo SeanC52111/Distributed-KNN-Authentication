@@ -194,7 +194,7 @@ public class STRTree {
 	}
 	
 	
-	public void secureKNN(int k,Point query,LinkedList<String> result,LinkedList VO) {
+	public void secureKNN(int k,Point query,LinkedList<Rect> result,LinkedList VO) {
 		STRNode n = this.root;
 		VO.add(new NNEntry(n,0.0));
 		int minindex = 0;
@@ -233,7 +233,7 @@ public class STRTree {
 			else {
 				counter++;
 				t.dist = 9999999.0;
-				result.add(t.node.MBR.toString());
+				result.add(t.node.MBR);
 			}
 		}
 		

@@ -13,10 +13,10 @@ import org.apache.hadoop.io.IOUtils;
 public class FileRead {
 	public static void main(String []args) throws Exception{
 		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(URI.create("hdfs://localhost:9000/user/hadoop/output/part-r-00000"),conf);
+		FileSystem fs = FileSystem.get(URI.create("hdfs://localhost:9000/user/hadoop/output/part-00000"),conf);
 		InputStream in=null;
 		try {
-			in = fs.open(new Path("hdfs://localhost:9000/user/hadoop/output/part-r-00000"));
+			in = fs.open(new Path("hdfs://localhost:9000/user/hadoop/output/part-00000"));
 			BufferedReader  br = new BufferedReader(new InputStreamReader(in));
 			while(br.ready()) {
 				String line = br.readLine();

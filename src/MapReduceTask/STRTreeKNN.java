@@ -1,6 +1,10 @@
 package MapReduceTask;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Iterator;
@@ -10,6 +14,8 @@ import debug.Debug;
 import quadIndex.*;
 import Tool.*;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -85,7 +91,10 @@ public class STRTreeKNN {
 		catch(IOException e) {
 			e.printStackTrace();
 		}
+		
 	}
+	
+	
 
 }
 
@@ -111,7 +120,7 @@ class STRTreeKNNMapper extends MapReduceBase
 		Debug.println("Treeid ="+treeid.toString());
 		LongWritable lw = new LongWritable(rq_id);
 		LinkedList VO = new LinkedList();
-		LinkedList<String> result = new LinkedList<String>();
+		LinkedList<Rect> result = new LinkedList<Rect>();
 		//System.out.println("root mbr: "+strtree.root.MBR.toString());
 		//boolean isinside = q.isInside(strtree.root.MBR);
 		//System.out.println(isinside == true);
@@ -120,19 +129,27 @@ class STRTreeKNNMapper extends MapReduceBase
 			
 			strtree.secureKNN(k, q, result, VO);
 			Debug.println("Find "+result.size()+" lakes.");
-			
-			for(String r:result) {
-				Debug.println(r);
-				oc.collect(new Text(lw.toString()), new Text(r));
+			Rect kthobj = result.get(result.size()-1);
+			Point p = new Point(kthobj.x1,kthobj.y1);
+			double dis = q.getdistance(p);
+			Rect knnrange = new Rect(q.x-dis,q.x+dis,q.y-dis,q.y+dis);
+			if(strtree.root.MBR.isContain(knnrange)) {
+				for(Rect r:result) {
+					Debug.println(r.toString());
+					oc.collect(new Text(lw.toString()), new Text(r.toString()));
+				}
+				String vos = "";
+				for(Object s: VO) {
+					if(s instanceof String)
+						vos += s + "#";
+				}
+				oc.collect(new Text("VO"), new Text(vos));
+				oc.collect(new Text("root_sig"), new Text(strtree.root.MBR.toString()+strtree.root.hashvalue));
+				
 			}
-			String vos = "";
-			for(Object s: VO) {
-				if(s instanceof String)
-					vos += s + "#";
+			else {
+				oc.collect(new Text(lw.toString()), new Text("needrange "+knnrange.toString()));
 			}
-			oc.collect(new Text("VO"), new Text(vos));
-			oc.collect(new Text("root_sig"), new Text(strtree.root.MBR.toString()+strtree.root.hashvalue));
-			
 		}
 		else {
 			VO.add("[");

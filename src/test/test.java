@@ -29,11 +29,11 @@ public class test {
 		
 		STRTree strtree = new STRTree(rlist,3);
 		LinkedList<String> VO = new LinkedList<String>();
-		LinkedList<String> result = new LinkedList<String>();
+		LinkedList<Rect> result = new LinkedList<Rect>();
 		strtree.secureKNN(4, new Point(3,15), result, VO);
 		System.out.println("results");
-		for(String r:result) {
-			System.out.println(r);
+		for(Rect r:result) {
+			System.out.println(r.toString());
 		}
 		System.out.println("VOs");
 		for(String s:VO) {

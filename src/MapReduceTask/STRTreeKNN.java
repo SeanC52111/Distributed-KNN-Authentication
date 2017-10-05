@@ -152,9 +152,7 @@ class STRTreeKNNMapper extends MapReduceBase
 			}
 		}
 		else {
-			VO.add("[");
-			VO.add("("+strtree.root.MBR.toString()+" "+strtree.root.hashvalue+")");
-			VO.add("]");
+			VO.add("{"+strtree.root.MBR.toString()+" "+strtree.root.hashvalue+"}");
 			String vos = "";
 			for(Object s : VO) {
 				if(s instanceof String)
@@ -196,7 +194,7 @@ class STRTreeKNNReducer extends MapReduceBase
 				oc.collect(rqid, new Text(r.toString()));
 				total++;
 			}
-			oc.collect(rqid, new Text("Summary: ["+total+"] lakes are found."));
+			//oc.collect(rqid, new Text("Summary: ["+total+"] lakes are found."));
 			Debug.println("Summary: ["+total+"] lakes are found.");
 		}
 	}

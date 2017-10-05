@@ -172,25 +172,30 @@ public class STRTree {
 	//process in recurrent format
 	public void secureRangeQuery(STRNode n,Rect query,ArrayList<Rect> result,LinkedList<String> VO)
 	{
-		VO.add("[");
-		for(int i =0;i<n.child.size();i++) {
-			if(query.isIntersects(n.child.get(i).MBR) && !n.child.get(i).isleaf) {
-				secureRangeQuery(n.child.get(i),query,result,VO);
-			}
-			else {
-				if(n.child.get(i).isleaf) {
-					VO.add(n.child.get(i).MBR.toString());
-					if(n.child.get(i).MBR.isIntersects(query)) {
-						//System.out.println("result: "+n.child.get(i).MBR.toString());
-						result.add(n.child.get(i).MBR);
+		if(query.isIntersects(n.MBR)) {
+			VO.add("[");
+			for(int i =0;i<n.child.size();i++) {
+				if(query.isIntersects(n.child.get(i).MBR) && !n.child.get(i).isleaf) {
+					secureRangeQuery(n.child.get(i),query,result,VO);
+				}
+				else {
+					if(n.child.get(i).isleaf) {
+						VO.add(n.child.get(i).MBR.toString());
+						if(n.child.get(i).MBR.isIntersects(query)) {
+							//System.out.println("result: "+n.child.get(i).MBR.toString());
+							result.add(n.child.get(i).MBR);
+						}
+					}
+					else
+						VO.add("("+n.child.get(i).MBR.toString()+" "+n.child.get(i).hashvalue+")");
 					}
 				}
-				else
-					VO.add("("+n.child.get(i).MBR.toString()+" "+n.child.get(i).hashvalue+")");
-				}
-			}
-		
-		VO.add("]");
+			
+			VO.add("]");
+		}
+		else {
+			VO.add("{"+n.MBR.toString()+" "+n.hashvalue+"}");
+		}
 	}
 	
 	
@@ -200,7 +205,7 @@ public class STRTree {
 		int minindex = 0;
 		int counter = 0;
 		double knearest = 0.0;
-		while(counter<k) {
+		while(!VO.isEmpty() && counter<k) {
 			double min = 9999999;
 			//find the first nearest distance and index
 			NNEntry t = null;
@@ -294,6 +299,14 @@ public class STRTree {
 			if(f == "]") {
 				ret.hash = new Hasher().stringSHA(str);
 				ret.MBR=MBR;
+				return ret;
+			}
+			if(f.charAt(0)=='{') {
+				String ms = f.substring(1, f.length()-1);
+				String[] result = ms.split(" ");
+				Rect mmbr = new Rect(Double.valueOf(result[0]),Double.valueOf(result[1]),Double.valueOf(result[2]),Double.valueOf(result[3]));
+				ret.MBR = mmbr;
+				ret.hash = mmbr.toString()+result[4];
 				return ret;
 			}
 		}

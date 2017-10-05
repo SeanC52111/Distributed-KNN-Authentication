@@ -166,7 +166,7 @@ class STRTreeRangeQueryReducer extends MapReduceBase
 				total++;
 			}
 			
-			oc.collect(rqid, new Text("Summary: ["+total+"] lakes are found."));
+			//oc.collect(rqid, new Text("Summary: ["+total+"] lakes are found."));
 			Debug.println("Summary: ["+total+"] lakes are found.");
 		}
 		

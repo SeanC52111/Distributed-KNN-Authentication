@@ -135,6 +135,7 @@ class STRTreeIndexReducer extends MapReduceBase
 		}
 		//Debug.println("before writing tree");
 		STRTreeWritable strtree = new STRTreeWritable(rlist,3);
+		strtree.DFStraverse();
 		//strtree.DFStraverse();
 		//Debug.println("after writing tree");
 		oc.collect(key, strtree);

@@ -144,7 +144,7 @@ class STRTreeKNNMapper extends MapReduceBase
 						vos += s + "#";
 				}
 				oc.collect(new Text("VO"), new Text(vos));
-				oc.collect(new Text("root_sig"), new Text(strtree.root.MBR.toString()+strtree.root.hashvalue));
+				//oc.collect(new Text("root_sig"), new Text(strtree.root.MBR.toString()+strtree.root.hashvalue));
 				
 			}
 			else {
@@ -159,7 +159,7 @@ class STRTreeKNNMapper extends MapReduceBase
 					vos += s + "#";
 			}
 			oc.collect(new Text("VO"), new Text(vos));
-			oc.collect(new Text("root_sig"), new Text(strtree.root.MBR.toString()+strtree.root.hashvalue));
+			//oc.collect(new Text("root_sig"), new Text(strtree.root.MBR.toString()+strtree.root.hashvalue));
 		}
 		
 	}

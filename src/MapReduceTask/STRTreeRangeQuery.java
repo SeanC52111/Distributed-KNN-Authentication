@@ -83,7 +83,7 @@ public class STRTreeRangeQuery {
 		
 		conf.setInputFormat(SequenceFileInputFormat.class);
 		
-		FileInputFormat.setInputPaths(conf, new Path(tree_path));
+		FileInputFormat.setInputPaths(conf, tree_path);
 		FileOutputFormat.setOutputPath(conf, new Path(out_path));
 		
 		try {

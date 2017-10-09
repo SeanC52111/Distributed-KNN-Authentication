@@ -1,12 +1,7 @@
 package MapReduceTask;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.*;
-import java.io.InputStream;
-import java.io.BufferedReader;
 import java.io.*;
 import java.net.URI;
 
@@ -17,7 +12,17 @@ import org.apache.hadoop.io.IOUtils;
 
 import quadIndex.Point;
 import quadIndex.Rect;
-
+class GlobalRecord{
+	String filename = "";
+	Rect mbr = new Rect();
+	String hash = "";
+	public GlobalRecord(String filename,Rect mbr,String hash) {
+		this.filename = filename;
+		this.mbr = mbr;
+		this.hash = hash;
+	}
+	
+}
 public class STRTreeMain {
 	public static void main(String []args)throws IOException,Exception {
 		/*
@@ -38,28 +43,66 @@ public class STRTreeMain {
 			System.out.println("Umrecognized sub commands.");
 		}
 		*/
-		String [] index = {"input","tree"};
-		String [] rangequery = {"1,1,7,-1,5","tree","output"};
-		String[] knn = {"1,1,7,4","tree","output"};
-		//STRTreeIndex.run(index);
-		//STRTreeRangeQuery.run(rangequery);
+		String inputname = "input";
+		String localindex = "tree";
+		String globaltablename = "globaltable";
+		String knnlocaloutput = "knnlocal";
+		String refineoutput = "refine";
+		//createIndex(inputname,localindex,globaltablename);
+		//read globalindex into memory
+		ArrayList<GlobalRecord> list = readGlobalIndex(globaltablename);
+		//run local knn
+		Point q = new Point(4,2);
+		int k = 2;
+		String knnpartition = findkNNPartition(q,list);
+		localkNN(1,q,k,knnpartition,localindex,knnlocaloutput);
+		String refine = checkRefinement(knnlocaloutput);
+		if(refine !="") {
+			System.out.println("refinement");
+			refine(refine,localindex,refineoutput,list); 
+		}else {
+			System.out.println("local knn is the final knn");
+			Configuration conf = new Configuration();
+			conf.set("fs.default.name", "hdfs://localhost:9000");
+			InputStream in=null;
+			ArrayList<String> reslist = new ArrayList<String>();
+			try {
+				FileSystem fs = FileSystem.get(conf);
+				Path path = new Path("/user/hadoop/"+knnlocaloutput+"/part-00000");
+				in = fs.open(path);
+				BufferedReader  br = new BufferedReader(new InputStreamReader(in));
+				while(br.ready()) {
+					String line = br.readLine();
+					reslist.add(line+"\n");
+				}
+				
+				br.close();
+			}catch(Exception e) {}
+			for(GlobalRecord l:list) {
+				if(l.filename!=knnpartition) {
+					reslist.add("UnprocessedVO\t"+l.mbr.toString()+" "+l.hash+"\n");
+				}
+			}
+			FileWriter fw = new FileWriter("knnresult.txt",false);
+			for(String r:reslist) {
+				fw.write(r);
+			}
+			fw.close();
+			/*
+			FileReader fr = new FileReader("knnresult.txt");
+			BufferedReader br = new BufferedReader(fr);
+			String line="";
+			while(br.ready()) {
+				line = br.readLine();
+				System.out.println(line.split("\t")[1]);
+			}
+			br.close();
+			fr.close();
+			*/
+		}
 		
-		
-		STRTreeKNN.run(knn);
-		String knnresult = getkNN("hdfs://localhost:9000/user/hadoop/output/part-00000");
-		int check = knnresult.indexOf("needrange");
-		System.out.println("check" +check);
-		
-		
-		if(check != -1) {
-		String[] mbr = knnresult.split("\t")[1].split(" ");
-		String knnrange = "2,"+mbr[1]+","+mbr[2]+","+mbr[3]+","+mbr[4];
-		try {
-			deleteDir("output");
-		}catch(Exception e) {}
-		String [] knnrangequery = {knnrange,"tree","output"};
-		STRTreeRangeQuery.run(knnrangequery);
-		
+		/*
+
 		Comparator<Rect> rectcmp = new Comparator<Rect>() {
 			public int compare(Rect r1,Rect r2) {
 				double dist1 = getMinimumDist(new Point(4,2),r1);
@@ -97,8 +140,163 @@ public class STRTreeMain {
 		}
 		
 		}
+		*/
+	}
+	
+	
+	public static void refine(String refine,String localindex,String refineoutput,ArrayList<GlobalRecord> list) {
+		String[] mbr = refine.split("\t")[1].split(" ");
+		String knnrange = "0,"+mbr[1]+","+mbr[2]+","+mbr[3]+","+mbr[4];
+		Rect r = new Rect(Double.valueOf(mbr[1]),Double.valueOf(mbr[2]),Double.valueOf(mbr[3]),Double.valueOf(mbr[4]));
+		try {
+			Configuration conf = new Configuration();
+			conf.set("fs.default.name", "hdfs://localhost:9000");
+			FileSystem fs = FileSystem.get(conf);
+			Path path = new Path("/user/hadoop/"+refineoutput);
+			if(fs.exists(path)) {
+				System.out.println("delete duplicate "+refineoutput);
+	        	fs.delete(path,true);
+	        }
+		}catch(Exception e) {}
+		ArrayList<String> rangelist = findRangeQueryPartition(r,list);
+		ArrayList<String> rangefilelist = new ArrayList<String>();
 		
+		for(String str:rangelist) {
+			rangefilelist.add(localindex+"/"+str+"-r-00000");
+		}
+		String rangesearchinput = String.join(",", rangefilelist);
+		System.out.println(rangesearchinput);
+		String [] knnrangequery = {knnrange,rangesearchinput,refineoutput};
+		STRTreeRangeQuery.run(knnrangequery);
+		Configuration conf = new Configuration();
+		conf.set("fs.default.name", "hdfs://localhost:9000");
+		InputStream in=null;
+		ArrayList<String> reslist = new ArrayList<String>();
+		try {
+			FileSystem fs = FileSystem.get(conf);
+			Path path = new Path("/user/hadoop/"+refineoutput+"/part-00000");
+			in = fs.open(path);
+			BufferedReader  br = new BufferedReader(new InputStreamReader(in));
+			while(br.ready()) {
+				String line = br.readLine();
+				reslist.add(line+"\n");
+			}
+			
+			br.close();
+		}catch(Exception e) {}
+		for(GlobalRecord l:list) {
+			if(!rangelist.contains(l.filename)) {
+				reslist.add("UnprocessedVO\t"+l.mbr.toString()+" "+l.hash+"\n");
+			}
+		}
+		try {
+			FileWriter fw = new FileWriter("knnresult.txt",false);
+			for(String res:reslist) {
+				fw.write(res);
+			}
+			fw.close();
+		}catch(Exception e) {}
 		
+	}
+	
+	
+	public static String checkRefinement(String knnlocaloutput) {
+		Configuration conf = new Configuration();
+		conf.set("fs.default.name", "hdfs://localhost:9000");
+		InputStream in=null;
+		String result = "";
+		try {
+			FileSystem fs = FileSystem.get(conf);
+			Path path = new Path("/user/hadoop/"+knnlocaloutput+"/part-00000");
+			in = fs.open(path);
+			BufferedReader  br = new BufferedReader(new InputStreamReader(in));
+			String line = br.readLine();
+			if(line.indexOf("needrange")!=-1) {
+				result = line;
+			}
+			br.close();
+		}catch(Exception e) {}
+		return result;
+	}
+	public static void localkNN(int qid,Point q,int k,String knnpartition,String localindex,String output) {
+		String strqid = String.valueOf(qid);
+		String strk = String.valueOf(k);
+		String strq = String.valueOf(q.x)+","+String.valueOf(q.y);
+		String[] knnquery = {strqid+","+strk+","+strq,localindex+"/"+knnpartition+"-r-00000",output};
+		STRTreeKNN.run(knnquery);
+	}
+	
+	
+	
+	public static void createIndex(String input,String output,String globaltablename) {
+		String[] index = {input,output};
+		try {
+			MultiOutputIndex.run(index);
+			Configuration conf = new Configuration();
+			conf.set("fs.default.name", "hdfs://localhost:9000");
+	        FileSystem fs = FileSystem.get(conf);
+			Path redunfile = new Path("/user/hadoop/"+output+"/part-r-00000");
+	        if(fs.exists(redunfile)) {
+	        	//System.out.println("yes");
+	        	fs.delete(redunfile,true);
+	        }
+	        String[] globalindex = {output,globaltablename};
+			GlobalIndex.run(globalindex);//construct globalindex table
+		}catch(Exception e) {e.printStackTrace();}
+	}
+	
+	
+	
+	public static ArrayList<GlobalRecord> readGlobalIndex(String globaltable) {
+		Configuration conf = new Configuration();
+		conf.set("fs.default.name", "hdfs://localhost:9000");
+		ArrayList<GlobalRecord> list = new ArrayList<GlobalRecord>();
+		InputStream in=null;
+		try {
+			FileSystem fs = FileSystem.get(conf);
+			Path path = new Path("/user/hadoop/"+globaltable+"/part-r-00000");
+			in = fs.open(path);
+			BufferedReader  br = new BufferedReader(new InputStreamReader(in));
+			while(br.ready()) {
+				String line = br.readLine();
+				String filename = line.split("\t")[0];
+				String mbrhash = line.split("\t")[1];
+				String[] split = mbrhash.split(" ");
+				double x1 = Double.valueOf(split[0]);
+				double x2 = Double.valueOf(split[1]);
+				double y1 = Double.valueOf(split[2]);
+				double y2 = Double.valueOf(split[3]);
+				String hash = split[4];
+				Rect MBR = new Rect(x1,x2,y1,y2);
+				list.add(new GlobalRecord(filename,MBR,hash));
+			}
+			br.close();
+		}catch(Exception e) {}
+		
+		return list;
+	}
+	
+	
+	
+	public static String findkNNPartition(Point q,ArrayList<GlobalRecord> list) {
+		String ret = "";
+		for(GlobalRecord l:list) {
+			if(q.isInside(l.mbr)) {
+				ret = l.filename;
+				break;
+			}
+		}
+		return ret;
+	}
+	
+	public static ArrayList<String> findRangeQueryPartition(Rect r,ArrayList<GlobalRecord> list){
+		ArrayList<String> result = new ArrayList<String>();
+		for(GlobalRecord l:list) {
+			if(l.mbr.isIntersects(r)) {
+				result.add(l.filename);
+			}
+		}
+		return result;
 	}
 	
 	private static double getMinimumDist(Point q,Rect r) {
@@ -114,42 +312,6 @@ public class STRTreeMain {
 		return ret;
 	}
 	
-	private static ArrayList<String> getFileContent(String uri)throws Exception{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(URI.create(uri),conf);
-		InputStream in=null;
-		ArrayList<String> ret = new ArrayList<String>();
-		try {
-			in = fs.open(new Path(uri));
-			BufferedReader  br = new BufferedReader(new InputStreamReader(in));
-			while(br.ready()) {
-				String line = br.readLine();
-				ret.add(line);
-			}
-			br.close();
-		}
-		finally {
-			
-		}
-		return ret;
-	}
-	private static String getkNN(String uri)throws Exception {
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(URI.create(uri),conf);
-		InputStream in=null;
-		String knn = "";
-		try {
-			in = fs.open(new Path(uri));
-			BufferedReader  br = new BufferedReader(new InputStreamReader(in));
-			String line = br.readLine();
-			knn = line;
-			br.close();
-		}
-		finally {
-			
-		}
-		return knn;
-	}
 	private static void deleteDir(String s)throws Exception{
 		Configuration conf = new Configuration();
 		Path output = new Path(s);

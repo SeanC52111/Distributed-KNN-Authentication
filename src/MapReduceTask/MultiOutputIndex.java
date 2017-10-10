@@ -34,11 +34,12 @@ import STRTree.STRTreeWritable;
 
 public class MultiOutputIndex {
 	public static void run(String[] args)throws Exception{
-		if(args.length<2) {
-			System.out.println("args less than 2 <input> <output>");
+		if(args.length<3) {
+			System.out.println("args less than 2 <input> <output> <nodec>");
 			return;
 		}
 		Configuration conf = new Configuration();
+		conf.setInt("nodec", Integer.valueOf(args[2]));
 		Job job = new Job(conf, "MultipleOutputIndex");
 		job.setJarByClass(MultiOutputIndex.class);
 		
@@ -53,7 +54,7 @@ public class MultiOutputIndex {
 		FileInputFormat.addInputPath(job, new Path(args[0]));
 		conf.set("fs.default.name", "hdfs://localhost:9000");
         FileSystem fs = FileSystem.get(conf);
-        Path path = new Path("/user/hadoop/input");
+        Path path = new Path("/user/hadoop/"+args[0]);
         FileStatus[] listStatus = fs.listStatus(path);
         for(FileStatus fileStatus:listStatus) {
         	String p = fileStatus.getPath().toString();

@@ -43,18 +43,23 @@ public class STRTreeMain {
 			System.out.println("Umrecognized sub commands.");
 		}
 		*/
-		String inputname = "input";
+		String inputname = "mapinput";
 		String localindex = "tree";
 		String globaltablename = "globaltable";
 		String knnlocaloutput = "knnlocal";
 		String refineoutput = "refine";
-		//createIndex(inputname,localindex,globaltablename);
+		createIndex(inputname,localindex,6,globaltablename);
 		//read globalindex into memory
 		ArrayList<GlobalRecord> list = readGlobalIndex(globaltablename);
 		//run local knn
-		Point q = new Point(4,2);
-		int k = 2;
+		Point q = new Point(22.4967766,113.4526999);
+		//Point q = new Point(7,4);
+		int k = 1;
 		String knnpartition = findkNNPartition(q,list);
+		if(knnpartition.equals("")) {
+			System.out.println("q is not inside the data range");
+			return;
+		}
 		localkNN(1,q,k,knnpartition,localindex,knnlocaloutput);
 		String refine = checkRefinement(knnlocaloutput);
 		if(refine !="") {
@@ -228,8 +233,8 @@ public class STRTreeMain {
 	
 	
 	
-	public static void createIndex(String input,String output,String globaltablename) {
-		String[] index = {input,output};
+	public static void createIndex(String input,String output,int nodec,String globaltablename) {
+		String[] index = {input,output,String.valueOf(nodec)};
 		try {
 			MultiOutputIndex.run(index);
 			Configuration conf = new Configuration();

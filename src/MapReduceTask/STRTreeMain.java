@@ -48,7 +48,11 @@ public class STRTreeMain {
 		String globaltablename = "globaltable";
 		String knnlocaloutput = "knnlocal";
 		String refineoutput = "refine";
-		createIndex(inputname,localindex,6,globaltablename);
+		
+		
+		//createIndex(inputname,localindex,6,globaltablename);
+		
+		
 		//read globalindex into memory
 		ArrayList<GlobalRecord> list = readGlobalIndex(globaltablename);
 		//run local knn
@@ -68,7 +72,7 @@ public class STRTreeMain {
 		}else {
 			System.out.println("local knn is the final knn");
 			Configuration conf = new Configuration();
-			conf.set("fs.default.name", "hdfs://localhost:9000");
+			//conf.set("fs.default.name", "hdfs://localhost:9000");
 			InputStream in=null;
 			ArrayList<String> reslist = new ArrayList<String>();
 			try {
@@ -93,18 +97,9 @@ public class STRTreeMain {
 				fw.write(r);
 			}
 			fw.close();
-			/*
-			FileReader fr = new FileReader("knnresult.txt");
-			BufferedReader br = new BufferedReader(fr);
-			String line="";
-			while(br.ready()) {
-				line = br.readLine();
-				System.out.println(line.split("\t")[1]);
-			}
-			br.close();
-			fr.close();
-			*/
+			
 		}
+		
 		
 		/*
 
@@ -155,7 +150,7 @@ public class STRTreeMain {
 		Rect r = new Rect(Double.valueOf(mbr[1]),Double.valueOf(mbr[2]),Double.valueOf(mbr[3]),Double.valueOf(mbr[4]));
 		try {
 			Configuration conf = new Configuration();
-			conf.set("fs.default.name", "hdfs://localhost:9000");
+			//conf.set("fs.default.name", "hdfs://localhost:9000");
 			FileSystem fs = FileSystem.get(conf);
 			Path path = new Path("/user/hadoop/"+refineoutput);
 			if(fs.exists(path)) {
@@ -174,7 +169,7 @@ public class STRTreeMain {
 		String [] knnrangequery = {knnrange,rangesearchinput,refineoutput};
 		STRTreeRangeQuery.run(knnrangequery);
 		Configuration conf = new Configuration();
-		conf.set("fs.default.name", "hdfs://localhost:9000");
+		//conf.set("fs.default.name", "hdfs://localhost:9000");
 		InputStream in=null;
 		ArrayList<String> reslist = new ArrayList<String>();
 		try {
@@ -207,7 +202,7 @@ public class STRTreeMain {
 	
 	public static String checkRefinement(String knnlocaloutput) {
 		Configuration conf = new Configuration();
-		conf.set("fs.default.name", "hdfs://localhost:9000");
+		//conf.set("fs.default.name", "hdfs://localhost:9000");
 		InputStream in=null;
 		String result = "";
 		try {
@@ -238,7 +233,7 @@ public class STRTreeMain {
 		try {
 			MultiOutputIndex.run(index);
 			Configuration conf = new Configuration();
-			conf.set("fs.default.name", "hdfs://localhost:9000");
+			//conf.set("fs.default.name", "hdfs://localhost:9000");
 	        FileSystem fs = FileSystem.get(conf);
 			Path redunfile = new Path("/user/hadoop/"+output+"/part-r-00000");
 	        if(fs.exists(redunfile)) {
@@ -254,7 +249,7 @@ public class STRTreeMain {
 	
 	public static ArrayList<GlobalRecord> readGlobalIndex(String globaltable) {
 		Configuration conf = new Configuration();
-		conf.set("fs.default.name", "hdfs://localhost:9000");
+		//conf.set("fs.default.name", "hdfs://localhost:9000");
 		ArrayList<GlobalRecord> list = new ArrayList<GlobalRecord>();
 		InputStream in=null;
 		try {

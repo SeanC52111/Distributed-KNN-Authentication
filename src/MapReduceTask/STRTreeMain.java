@@ -48,6 +48,7 @@ public class STRTreeMain {
 		String globaltablename = "globaltable";
 		String knnlocaloutput = "knnlocal";
 		String refineoutput = "refine";
+<<<<<<< HEAD
 		int nodecapcity = 6;
 		int k = 1;
 		Point q = null;
@@ -117,6 +118,9 @@ public class STRTreeMain {
 		}
 		
 		/*
+=======
+		
+>>>>>>> eec1b367500e05cc8109220d85210a58ae8b742a
 		
 		//createIndex(inputname,localindex,6,globaltablename);
 		
@@ -168,6 +172,7 @@ public class STRTreeMain {
 			
 		}
 		*/
+		
 		
 		/*
 

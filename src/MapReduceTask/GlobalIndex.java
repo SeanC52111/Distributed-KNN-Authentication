@@ -54,7 +54,7 @@ public class GlobalIndex {
 		
 		FileInputFormat.addInputPath(job, new Path(args[0]));
 		Path outPath = new Path(args[1]);
-		conf.set("fs.default.name", "hdfs://localhost:9000");
+		//conf.set("fs.default.name", "hdfs://localhost:9000");
         FileSystem fs = FileSystem.get(conf);
         if(fs.exists(outPath)) {
         	fs.delete(outPath,true);

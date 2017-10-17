@@ -52,7 +52,7 @@ public class MultiOutputIndex {
 		job.setOutputValueClass(STRTreeWritable.class);
 		
 		FileInputFormat.addInputPath(job, new Path(args[0]));
-		conf.set("fs.default.name", "hdfs://localhost:9000");
+		//conf.set("fs.default.name", "hdfs://localhost:9000");
         FileSystem fs = FileSystem.get(conf);
         Path path = new Path("/user/hadoop/"+args[0]);
         FileStatus[] listStatus = fs.listStatus(path);
@@ -86,7 +86,7 @@ class MultiOutputIndexMapper extends Mapper<LongWritable,Text,Text,Rect>{
 		String name = split[split.length-1];
 		name = name.split(".txt")[0];
 		Text tid = new Text(name);
-		Debug.println("Tree id= "+tid.toString());
+		//Debug.println("Tree id= "+tid.toString());
 		context.write(tid, rect);
 	}
 	

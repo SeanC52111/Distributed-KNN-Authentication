@@ -12,18 +12,8 @@ import org.apache.hadoop.io.IOUtils;
 
 import quadIndex.Point;
 import quadIndex.Rect;
-class GlobalRecord{
-	String filename = "";
-	Rect mbr = new Rect();
-	String hash = "";
-	public GlobalRecord(String filename,Rect mbr,String hash) {
-		this.filename = filename;
-		this.mbr = mbr;
-		this.hash = hash;
-	}
-	
-}
-public class STRTreeMain {
+
+public class STRTreeTestkNN {
 	public static void main(String []args)throws IOException,Exception {
 		/*
 		if(args.length<1)
@@ -51,70 +41,21 @@ public class STRTreeMain {
 		int nodecapcity = 6;
 		int k = 1;
 		Point q = null;
-		if(args.length != 5) {
-			System.out.println("need five arguments");
+		ArrayList<GlobalRecord> list = readGlobalIndex(globaltablename);
+		q = new Point(22.49,113.45);
+		String knnpartition = findkNNPartition(q,list);
+		if(knnpartition.equals("")) {
+			System.out.println("q is not inside the data range");
 			return;
 		}
-		else {
-			if(args[0].equals("index")) {
-				inputname = args[1];
-				localindex = args[2];
-				nodecapcity = Integer.valueOf(args[3]);
-				globaltablename = args[4];
-				createIndex(inputname,localindex,nodecapcity,globaltablename);
-			}else if(args[0].equals("knn")) {
-				ArrayList<GlobalRecord> list = readGlobalIndex(globaltablename);
-				k = Integer.valueOf(args[1]);
-				String point = args[2];
-				double x = Double.valueOf(args[2].split(",")[0]);
-				double y = Double.valueOf(args[2].split(",")[1]);
-				q = new Point(x,y);
-				String knnpartition = findkNNPartition(q,list);
-				if(knnpartition.equals("")) {
-					System.out.println("q is not inside the data range");
-					return;
-				}
-				localkNN(1,q,k,knnpartition,localindex,knnlocaloutput);
-				
-				String refine = checkRefinement(knnlocaloutput);
-				if(refine !="") {
-					System.out.println("refinement");
-					refine(refine,localindex,refineoutput,list); 
-				}else {
-					System.out.println("local knn is the final knn");
-					Configuration conf = new Configuration();
-					//conf.set("fs.default.name", "hdfs://localhost:9000");
-					InputStream in=null;
-					ArrayList<String> reslist = new ArrayList<String>();
-					try {
-						FileSystem fs = FileSystem.get(conf);
-						Path path = new Path("/user/hadoop/"+knnlocaloutput+"/part-00000");
-						in = fs.open(path);
-						BufferedReader  br = new BufferedReader(new InputStreamReader(in));
-						while(br.ready()) {
-							String line = br.readLine();
-							reslist.add(line+"\n");
-						}
-						
-						br.close();
-					}catch(Exception e) {}
-					for(GlobalRecord l:list) {
-						if(l.filename!=knnpartition) {
-							reslist.add("UnprocessedVO\t"+l.mbr.toString()+" "+l.hash+"\n");
-						}
-					}
-					FileWriter fw = new FileWriter("knnresult.txt",false);
-					for(String r:reslist) {
-						fw.write(r);
-					}
-					fw.close();
+		//localkNN(1,q,k,knnpartition,localindex,knnlocaloutput);
+		String strq = String.valueOf(q.x)+","+String.valueOf(q.y);
+		String[] knnquery = {"1"+","+"1"+","+strq,"tree"+"/"+"1"+"-r-00000","refine"};
+		STRTreeKNN.run(knnquery);		
+
 					
-				}
-			}else {
-				System.out.println("wrong key words");
-				return;
-			}
 		}
+	
 		
 		/*
 		
@@ -209,7 +150,7 @@ public class STRTreeMain {
 		
 		}
 		*/
-	}
+	
 	
 	
 	public static void refine(String refine,String localindex,String refineoutput,ArrayList<GlobalRecord> list) {
